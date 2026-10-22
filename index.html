@@ -85,6 +85,12 @@ nav button{font-size:.85rem;padding:12px 2px;white-space:nowrap}
 .blab{display:flex;gap:2px;font-size:.7rem;color:var(--mute)}
 .blab span{flex:1;text-align:center;overflow:hidden}
 nav button{font-size:.8rem}
+.wd{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;margin:8px 0;font-size:.9rem}
+.wd .bar{height:10px;background:var(--bar);border-radius:5px;overflow:hidden}
+.wd .bar i{display:block;height:100%;background:var(--in);border-radius:5px}
+.wd span:last-child{white-space:nowrap;min-width:92px;text-align:right}
+.chk{flex:1 1 100%;display:flex;gap:8px;align-items:center;font-size:.85rem;color:var(--mute);font-weight:400}
+.chk input{width:auto}
 .hide{display:none}
 @media (max-width:480px){.sum b{font-size:1rem}}
 </style>
@@ -122,6 +128,7 @@ nav button{font-size:.8rem}
 <div class="row" style="margin-top:10px">
 <div class="field" style="flex:3 1 200px"><label for="eNote">Nota (facoltativa)</label><input id="eNote" type="text" maxlength="80"></div>
 <button class="btn" id="addE">Aggiungi movimento</button>
+<label class="chk"><input type="checkbox" id="eMonthly"> Totale del mese (non di un singolo giorno)</label>
 </div>
 </div>
 <div class="row" style="margin-bottom:12px;align-items:flex-end"><div class="field"><label for="mon">Mese</label><input id="mon" type="month"></div></div>
@@ -211,8 +218,8 @@ document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.query
 $("#addE").onclick=()=>{
  const a=parseFloat($("#eAmt").value);
  if(!(a>0)){$("#eAmt").focus();return}
- if(editE)S.entries=S.entries.filter(x=>x.id!==editE);S.entries.push({id:editE||uid(),type,amount:a,cat:$("#eCat").value,date:$("#eDate").value||today,note:$("#eNote").value.trim()});editE=null;$("#addE").textContent="Aggiungi movimento";
- $("#eAmt").value="";$("#eNote").value="";save();render()};
+ if(editE)S.entries=S.entries.filter(x=>x.id!==editE);S.entries.push({id:editE||uid(),type,amount:a,cat:$("#eCat").value,date:$("#eDate").value||today,note:$("#eNote").value.trim(),monthly:$("#eMonthly").checked||undefined});editE=null;$("#addE").textContent="Aggiungi movimento";
+ $("#eAmt").value="";$("#eNote").value="";$("#eMonthly").checked=false;save();render()};
 $("#mon").onchange=render;
 
 $("#addD").onclick=()=>{
@@ -291,7 +298,7 @@ const cl=n=>n>0.004?"pos":n<-0.004?"neg":"";
 const pct=(a,b)=>a>0?Math.round((a-b)/a*100)+"%":"–";
 const sumT=(es,t)=>es.filter(e=>e.type===t).reduce((s,e)=>s+e.amount,0);
 let editE=null,editD=null;
-function ed(id){const e=S.entries.find(x=>x.id===id);if(!e)return;editE=id;type=e.type;document.querySelectorAll(".seg button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.type===type));fillCats();$("#eCat").value=e.cat;$("#eAmt").value=e.amount;$("#eDate").value=e.date;$("#eNote").value=e.note||"";$("#addE").textContent="Salva modifica";$("#eAmt").scrollIntoView();$("#eAmt").focus()}
+function ed(id){const e=S.entries.find(x=>x.id===id);if(!e)return;editE=id;type=e.type;document.querySelectorAll(".seg button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.type===type));fillCats();$("#eCat").value=e.cat;$("#eAmt").value=e.amount;$("#eDate").value=e.date;$("#eNote").value=e.note||"";$("#eMonthly").checked=isTot(e);$("#addE").textContent="Salva modifica";$("#eAmt").scrollIntoView();$("#eAmt").focus()}
 function payD(id){const d=S.debts.find(x=>x.id===id);if(!d||d.balance<=0)return;const p=Math.min(d.min,d.balance);d.balance=Math.round((d.balance-p)*100)/100;S.entries.push({id:uid(),type:"out",amount:p,cat:"Rate e debiti",date:today,note:"Rata "+d.name});save();render()}
 function edD(id){const d=S.debts.find(x=>x.id===id);if(!d)return;editD=id;$("#dName").value=d.name;$("#dBal").value=d.balance;$("#dApr").value=d.apr;$("#dMin").value=d.min;$("#addD").textContent="Salva modifica";$("#dName").focus()}
 function estimate(){const cm=today.slice(0,7),mk=[...new Set(S.entries.map(e=>e.date.slice(0,7)))].filter(m=>m<cm).sort().slice(-3);if(!mk.length)return null;const es=S.entries.filter(e=>mk.includes(e.date.slice(0,7))),inc=sumT(es,"in")/mk.length,out=es.filter(e=>e.type==="out"&&e.cat!=="Rate e debiti").reduce((s,e)=>s+e.amount,0)/mk.length,noOut=mk.filter(m=>!es.some(e=>e.type==="out"&&e.date.slice(0,7)===m)).length,tax=inc*(S.tax||0)/100,fix=S.fixed||0;return{mk,inc,out,tax,fix,noOut,net:inc-out-tax-fix}}
@@ -395,11 +402,12 @@ function renderHome(){
  du.sort();
  $("#hDue").innerHTML=du.length?du.slice(0,5).map(x=>`<li class="it"><div class="t"><b>${esc(x[1])}</b><span>${new Date(x[0]+"T00:00").toLocaleDateString("it-IT",{day:"numeric",month:"long"})}</span></div><b class="neg">${fmt(x[2])}</b></li>`).join(""):`<p class="empty">Nessuna scadenza in arrivo. Aggiungi le spese ricorrenti nella scheda Movimenti.</p>`;
 }
+const isTot=e=>!!e.monthly||/^seed-i/.test(e.id)||/totale (del )?mese/i.test(e.note||"");
 function renderMore(){
- const by={};S.entries.filter(e=>e.type==="in").forEach(e=>by[e.date]=(by[e.date]||0)+e.amount);
- const g=[[],[],[],[],[],[],[]];Object.entries(by).forEach(([d,v])=>g[(new Date(d+"T00:00").getDay()+6)%7].push(v));
- const nm=["Lun","Mar","Mer","Gio","Ven","Sab","Dom"],av=g.map(a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0),mx=Math.max(...av);
- $("#cWd").innerHTML=mx?av.map((v,i)=>`<div class="cat"><span>${nm[i]}</span><i style="width:${Math.max(2,v/mx*55)}%;background:var(--in)"></i><span>${f0(v)}${g[i].length?` (${g[i].length} gg)`:""}</span></div>`).join("")+`<p class="note">Media degli incassi dei giorni registrati, esclusi i totali mensili importati. Più giorni registri, più il dato è affidabile.</p>`:`<p class="empty">Registra gli incassi giorno per giorno per vedere quali giorni rendono di più.</p>`;
+ const by={};S.entries.filter(e=>e.type==="in"&&!isTot(e)).forEach(e=>by[e.date]=(by[e.date]||0)+e.amount);
+ const g=[[],[],[],[],[],[],[]];Object.entries(by).forEach(([d,v])=>{const w=new Date(d+"T00:00").getDay();if(!isNaN(w))g[(w+6)%7].push(v)});
+ const nm=["Lun","Mar","Mer","Gio","Ven","Sab","Dom"],av=g.map(a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0),mx=Math.max(...av),best=av.indexOf(mx);
+ $("#cWd").innerHTML=mx>0?av.map((v,i)=>`<div class="wd"><span>${nm[i]}</span><div class="bar"><i style="width:${v/mx*100}%"></i></div><span>${f0(v)}${g[i].length?` (${g[i].length} gg)`:""}</span></div>`).join("")+`<p class="note">Giorno più forte: <b>${nm[best]}</b>. Media degli incassi dei giorni registrati: le voci segnate come “Totale del mese” sono escluse. Più giorni registri, più il dato è affidabile.</p>`:`<p class="empty">Registra gli incassi giorno per giorno per vedere quali giorni rendono di più.</p>`;
  const k=Object.keys(S.dHist||{}).sort(),H=S.dHist||{},hm=Math.max(1,...k.map(x=>H[x]));
  $("#cDebt").innerHTML=k.length?`<div class="bars" role="img" aria-label="Debito residuo registrato mese per mese">${k.map(m=>`<i style="height:${Math.max(2,H[m]/hm*100)}%" title="${lm(m)}"></i>`).join("")}</div><div class="blab">${k.map(m=>`<span>${lm(m).slice(0,3)}</span>`).join("")}</div><p class="note">${k.length>1?`Da ${lm(k[0])} a ${lm(k[k.length-1])}: ${fmt(H[k[0]]-H[k[k.length-1]])} di debito in meno (da ${fmt(H[k[0]])} a ${fmt(H[k[k.length-1]])}).`:`Residuo registrato a ${lm(k[0])}: ${fmt(H[k[0]])}. Ogni mese l’app aggiunge un punto, così vedrai come scende davvero il debito.`}</p>`:`<p class="empty">Aggiungi i tuoi debiti: da quel momento l’app registra ogni mese il residuo reale.</p>`;
 }
