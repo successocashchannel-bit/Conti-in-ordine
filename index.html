@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Conti in ordine</title>
+<meta name="description" content="Registra entrate e uscite e crea un piano per uscire dai debiti.">
+<meta name="theme-color" content="#1F4E79">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+:root{--bg:#EEF3F6;--surf:#fff;--ink:#14212B;--mute:#5B6B78;--line:#D5DEE5;--in:#17745A;--out:#A8325A;--acc:#1F4E79;--accink:#fff;--bar:#C9D8E4;
+color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1A22;--surf:#172733;--ink:#E8EFF4;--mute:#9DB0BE;--line:#2A3E4C;--in:#4FC79F;--out:#F07AA0;--acc:#7DB4E6;--accink:#0F1A22;--bar:#2A4356;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F1A22;--surf:#172733;--ink:#E8EFF4;--mute:#9DB0BE;--line:#2A3E4C;--in:#4FC79F;--out:#F07AA0;--acc:#7DB4E6;--accink:#0F1A22;--bar:#2A4356;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+main{max-width:720px;margin:0 auto;padding:20px 16px 56px}
+h1{font-size:1.6rem;font-weight:800;margin:4px 0 2px;letter-spacing:-.02em}
+h2{font-size:1.05rem;font-weight:800;margin:0 0 12px}
+.sub{color:var(--mute);margin:0 0 18px}
+nav{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px}
+nav button{flex:1;background:none;border:0;border-bottom:3px solid transparent;padding:12px 4px;font:inherit;font-weight:600;color:var(--mute);cursor:pointer}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--acc)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.card{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:4px;flex:1 1 130px;min-width:0}
+label{font-size:.85rem;font-weight:600;color:var(--mute)}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px;width:100%}
+.btn{font:inherit;font-weight:800;background:var(--acc);color:var(--accink);border:0;border-radius:6px;padding:11px 18px;cursor:pointer;align-self:flex-end}
+.btn.ghost{background:none;color:var(--acc);border:1px solid var(--acc);font-weight:600}
+.seg{display:flex;gap:6px;margin-bottom:12px}
+.seg button{flex:1;font:inherit;font-weight:600;padding:10px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"].i{background:var(--in);color:var(--accink);border-color:var(--in)}
+.seg button[aria-pressed="true"].o{background:var(--out);color:var(--accink);border-color:var(--out)}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:left}
+.sum div{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:12px}
+.sum small{display:block;color:var(--mute);font-size:.8rem}
+.sum b{font-size:1.15rem;font-weight:800}
+.pos{color:var(--in)}.neg{color:var(--out)}
+ul{list-style:none;margin:0;padding:0}
+li.it{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+li.it:first-child{border-top:0}
+li.it .t{flex:1;min-width:0}
+li.it .t span{display:block;color:var(--mute);font-size:.82rem;overflow-wrap:anywhere}
+.x{background:none;border:0;color:var(--mute);font-size:1.2rem;cursor:pointer;padding:4px 8px;border-radius:6px}
+.x:hover{color:var(--out)}
+.cat{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:.9rem}
+.cat i{display:block;height:8px;border-radius:4px;background:var(--out);min-width:3px}
+.cat span:first-child{width:92px;flex:none}
+.empty{color:var(--mute);margin:4px 0}
+.hero{background:var(--acc);color:var(--accink);border-radius:10px;padding:22px 18px;margin-bottom:16px}
+.hero small{opacity:.85}
+.hero .big{font-size:clamp(1.7rem,7vw,2.4rem);font-weight:800;line-height:1.1;margin:6px 0 6px;letter-spacing:-.02em}
+.tl{margin:12px 0}
+.tl .n{display:flex;justify-content:space-between;gap:8px;font-weight:600;font-size:.92rem}
+.tl .n span:last-child{color:var(--mute);font-weight:400}
+.tl .track{height:12px;background:var(--bar);border-radius:6px;margin:5px 0 12px}
+.tl .track i{display:block;height:100%;border-radius:6px;background:var(--in)}
+.warn{background:var(--surf);border:1px solid var(--out);border-left-width:5px;border-radius:8px;padding:12px;margin-bottom:16px}
+.note{color:var(--mute);font-size:.85rem}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{padding:8px 6px;text-align:right;border-top:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{color:var(--mute);font-weight:600;font-size:.82rem;border-top:0}
+tfoot td{font-weight:800;border-top:2px solid var(--ink)}
+tr.z td{color:var(--mute)}
+.lnk{background:none;border:0;font:inherit;color:var(--acc);font-weight:600;cursor:pointer;padding:0;text-decoration:underline}
+.bars{display:flex;align-items:flex-end;gap:2px;height:110px}
+.bars i{flex:1;background:var(--out);border-radius:2px 2px 0 0}
+.mch{display:flex;gap:6px;align-items:flex-end;height:110px;margin:12px 0 6px}
+.mch div{flex:1;display:flex;gap:2px;align-items:flex-end;height:100%}
+.mch i{flex:1;border-radius:2px 2px 0 0;min-height:1px}
+nav{overflow-x:auto}
+nav button{font-size:.85rem;padding:12px 2px;white-space:nowrap}
+.chart{width:100%;height:auto;display:block;margin-top:12px}
+.chart .gi{fill:var(--in)}.chart .go{fill:var(--out)}.chart .gl{stroke:var(--acc);fill:none;stroke-width:2.5;stroke-linejoin:round}
+.chart text{fill:var(--mute);font-size:10px}.chart .ax{stroke:var(--line);stroke-width:1}
+.leg{display:flex;gap:14px;flex-wrap:wrap;font-size:.82rem;color:var(--mute);margin-top:6px}
+.leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px}
+.blab{display:flex;gap:2px;font-size:.7rem;color:var(--mute)}
+.blab span{flex:1;text-align:center;overflow:hidden}
+nav button{font-size:.8rem}
+.hide{display:none}
+@media (max-width:480px){.sum b{font-size:1rem}}
+</style>
+</head>
+<body>
+<main>
+<h1>Conti in ordine</h1>
+<p class="sub">Registra entrate e uscite, poi scopri come uscire dai debiti. I dati restano solo su questo dispositivo.</p>
+<nav role="tablist">
+<button role="tab" data-tab="home" aria-selected="true">Riepilogo</button>
+<button role="tab" data-tab="mov" aria-selected="false">Movimenti</button>
+<button role="tab" data-tab="rend" aria-selected="false">Rendiconto</button>
+<button role="tab" data-tab="and" aria-selected="false">Andamento</button>
+<button role="tab" data-tab="deb" aria-selected="false">Debiti</button>
+<button role="tab" data-tab="piano" aria-selected="false">Piano</button>
+</nav>
+
+<section id="home">
+<div class="hero" id="hMain"></div>
+<div id="hWarn"></div>
+<div class="card"><h2>Punto di pareggio del mese</h2><div id="hBE"></div></div>
+<div class="card"><h2>Previsione di fine mese</h2><div id="hFc"></div></div>
+<div class="card"><h2>Confronto con i mesi precedenti</h2><div class="tw"><table id="hCmp"></table></div></div>
+<div class="card"><h2>Prossime scadenze</h2><ul id="hDue"></ul></div>
+</section>
+<section id="mov" class="hide">
+<div class="card"><div class="row" style="align-items:flex-end"><div class="field"><label for="qAmt">Incasso di oggi (€)</label><input id="qAmt" type="number" inputmode="decimal" min="0" step="0.01"></div><button class="btn" id="qAdd">Registra incasso</button></div></div>
+<div class="card">
+<div class="seg"><button class="i" data-type="in" aria-pressed="false">Entrata</button><button class="o" data-type="out" aria-pressed="true">Uscita</button></div>
+<div class="row">
+<div class="field"><label for="eAmt">Importo (€)</label><input id="eAmt" type="number" inputmode="decimal" min="0" step="0.01"></div>
+<div class="field"><label for="eCat">Categoria</label><select id="eCat"></select></div>
+<div class="field"><label for="eDate">Data</label><input id="eDate" type="date"></div>
+</div>
+<div class="row" style="margin-top:10px">
+<div class="field" style="flex:3 1 200px"><label for="eNote">Nota (facoltativa)</label><input id="eNote" type="text" maxlength="80"></div>
+<button class="btn" id="addE">Aggiungi movimento</button>
+</div>
+</div>
+<div class="row" style="margin-bottom:12px;align-items:flex-end"><div class="field"><label for="mon">Mese</label><input id="mon" type="month"></div></div>
+<div class="sum" id="sum"></div>
+<div class="card" style="margin-top:16px"><h2>Dove vanno i soldi</h2><div id="cats"></div></div>
+<div class="card"><h2>Movimenti del mese</h2><ul id="list"></ul></div>
+<div class="card"><h2>Spese fisse ricorrenti</h2>
+<p class="note" style="margin-top:0">Vengono registrate da sole ogni mese nel giorno indicato. Per le spese fisse usa una categoria diversa da “Rate e debiti”, altrimenti non pesano sull’avanzo.</p>
+<div class="row"><div class="field" style="flex:2 1 160px"><label for="rcName">Nome</label><input id="rcName" type="text" maxlength="40" placeholder="Es. Macchina"></div><div class="field"><label for="rcAmt">Importo (€)</label><input id="rcAmt" type="number" inputmode="decimal" min="0" step="0.01"></div><div class="field"><label for="rcDay">Giorno del mese</label><input id="rcDay" type="number" inputmode="numeric" min="1" max="31"></div></div>
+<div class="row" style="margin-top:10px"><div class="field"><label for="rcCat">Categoria</label><select id="rcCat"></select></div><div class="field"><label for="rcStart">Primo pagamento (mese)</label><input id="rcStart" type="month"></div><div class="field"><label for="rcDur">Durata (vuoto = senza fine)</label><div class="row" style="flex-wrap:nowrap"><input id="rcDur" type="number" inputmode="numeric" min="1"><select id="rcUnit" aria-label="Unità di durata" style="width:auto"><option value="1">mesi</option><option value="12">anni</option></select></div></div><button class="btn" id="recAdd">Aggiungi</button></div>
+<ul id="recList" style="margin-top:12px"></ul></div>
+</section>
+
+<section id="rend" class="hide">
+<div class="card">
+<div class="field" style="max-width:160px"><label for="rYear">Anno</label><select id="rYear"></select></div>
+<h2 style="margin-top:16px">Rendiconto annuale</h2>
+<div id="rChart" class="mch" role="img" aria-label="Grafico mensile di entrate e uscite"></div>
+<p class="note" style="margin:0 0 8px">Verde: entrate. Rosso: uscite.</p>
+<div class="tw"><table id="rAnn"></table></div>
+<p class="note">Tocca un mese per vederlo giorno per giorno.</p>
+</div>
+<div class="card" id="rDay">
+<div class="field" style="max-width:200px"><label for="rMon">Mese</label><input id="rMon" type="month"></div>
+<h2 style="margin-top:16px">Rendiconto giorno per giorno</h2>
+<div class="tw"><table id="rDays"></table></div>
+<p class="note">Le voci importate come totale mensile compaiono nel giorno in cui sono datate, di solito a fine mese.</p>
+</div>
+</section>
+
+<section id="and" class="hide">
+<div class="card"><h2>Andamento giornaliero</h2><div class="field" style="max-width:200px"><label for="aMon">Mese</label><input id="aMon" type="month"></div><div id="cDay"></div></div>
+<div class="card"><h2>Andamento mensile</h2><div class="field" style="max-width:160px"><label for="aYear">Anno</label><select id="aYear"></select></div><div id="cMon"></div></div>
+<div class="card"><h2>Andamento annuale</h2><div id="cYear"></div></div>
+<div class="card"><h2>Incasso medio per giorno della settimana</h2><div id="cWd"></div></div>
+<div class="card"><h2>Storico reale del debito</h2><div id="cDebt"></div></div>
+</section>
+
+<section id="deb" class="hide">
+<div class="card">
+<div class="row">
+<div class="field" style="flex:2 1 160px"><label for="dName">Nome del debito</label><input id="dName" type="text" maxlength="40" placeholder="Es. Carta di credito"></div>
+<div class="field"><label for="dBal">Residuo (€)</label><input id="dBal" type="number" inputmode="decimal" min="0" step="0.01"></div>
+</div>
+<div class="row" style="margin-top:10px">
+<div class="field"><label for="dApr">Tasso annuo (TAN %)</label><input id="dApr" type="number" inputmode="decimal" min="0" step="0.01" value="0"></div>
+<div class="field"><label for="dMin">Rata minima mensile (€)</label><input id="dMin" type="number" inputmode="decimal" min="0" step="0.01"></div>
+<button class="btn" id="addD">Aggiungi debito</button>
+</div>
+</div>
+<div class="card"><h2>I tuoi debiti</h2><ul id="dlist"></ul><p class="note" id="dtot"></p></div>
+</section>
+
+<section id="piano" class="hide">
+<div class="card">
+<div class="row">
+<div class="field"><label for="bud">Quanto puoi pagare ogni mese (€)</label><input id="bud" type="number" inputmode="decimal" min="0" step="0.01"></div>
+<div class="field"><label for="strat">Strategia</label><select id="strat"><option value="avalanche">Valanga: prima il tasso più alto</option><option value="snowball">Palla di neve: prima il debito più piccolo</option></select></div>
+</div>
+<div class="row" style="margin-top:10px"><div class="field"><label for="tax">Accantonamento tasse (% sugli incassi)</label><input id="tax" type="number" inputmode="decimal" min="0" max="100" step="1"></div><div class="field"><label for="fix">Spese fisse mensili non registrate (€)</label><input id="fix" type="number" inputmode="decimal" min="0" step="0.01"></div><div class="field"><label for="xtra">E se pagassi di più? Extra al mese (€)</label><input id="xtra" type="number" inputmode="decimal" min="0" step="10" value="100"></div></div>
+<p class="note" id="sugg" style="margin:10px 0 0"></p>
+</div>
+<div id="out"></div>
+<p class="note">Stima indicativa: non tiene conto di commissioni, nuovi debiti o variazioni di tasso. Per decisioni importanti confrontati con un professionista.</p>
+<div class="card"><h2>Backup dei dati</h2><p class="note" style="margin-top:0">I dati sono salvati solo su questo dispositivo, non su un server. Per usare l’app su un altro dispositivo, trasferiscili con il backup.</p><p class="note" style="margin-top:0">Genera il backup, copia tutto il testo e conservalo (per esempio nelle note). Per ripristinarlo incollalo qui e premi Ripristina.</p><textarea id="bk" rows="4" aria-label="Testo del backup" style="width:100%;font:inherit;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px"></textarea><div class="row" style="margin-top:10px"><button class="btn ghost" id="bkGen">Genera backup</button><button class="btn ghost" id="bkRes">Ripristina</button></div><p class="note" id="bkMsg"></p></div>
+<p><button class="btn ghost" id="reset">Cancella tutti i dati</button></p>
+</section>
+<p class="note" style="margin-top:28px">Conti in ordine è uno strumento di organizzazione personale: stime e piani non costituiscono consulenza finanziaria, fiscale o legale. I dati restano sul tuo dispositivo.</p>
+</main>
+
+<script>
+const $=s=>document.querySelector(s);
+const fmt=n=>new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(n||0);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const CATS={in:["Stipendio","Lavoro autonomo","Altro"],out:["Casa","Spesa","Trasporti","Salute","Svago","Rate e debiti","Altro"]};
+let S={entries:[],debts:[],budget:0,strategy:"avalanche"},type="out";
+try{const r=localStorage.getItem("conti1");if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+const save=(auto)=>{if(!auto)S.upd=Date.now();try{localStorage.setItem("conti1",JSON.stringify(S))}catch(e){}};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const today=new Date().toISOString().slice(0,10);
+$("#eDate").value=today;$("#mon").value=today.slice(0,7);
+
+function fillCats(){$("#eCat").innerHTML=CATS[type].map(c=>`<option>${c}</option>`).join("")}
+document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{type=b.dataset.type;document.querySelectorAll(".seg button").forEach(x=>x.setAttribute("aria-pressed",x===b));fillCats()});
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button").forEach(x=>x.setAttribute("aria-selected",x===b));["home","mov","rend","and","deb","piano"].forEach(id=>$("#"+id).classList.toggle("hide",id!==b.dataset.tab));render()});
+
+$("#addE").onclick=()=>{
+ const a=parseFloat($("#eAmt").value);
+ if(!(a>0)){$("#eAmt").focus();return}
+ if(editE)S.entries=S.entries.filter(x=>x.id!==editE);S.entries.push({id:editE||uid(),type,amount:a,cat:$("#eCat").value,date:$("#eDate").value||today,note:$("#eNote").value.trim()});editE=null;$("#addE").textContent="Aggiungi movimento";
+ $("#eAmt").value="";$("#eNote").value="";save();render()};
+$("#mon").onchange=render;
+
+$("#addD").onclick=()=>{
+ const n=$("#dName").value.trim(),b=parseFloat($("#dBal").value),m=parseFloat($("#dMin").value),r=parseFloat($("#dApr").value)||0;
+ if(!n){$("#dName").focus();return}
+ if(!(b>0)){$("#dBal").focus();return}
+ if(!(m>0)){$("#dMin").focus();return}
+ if(editD)S.debts=S.debts.filter(x=>x.id!==editD);S.debts.push({id:editD||uid(),name:n,balance:b,apr:r,min:m});editD=null;$("#addD").textContent="Aggiungi debito";
+ ["#dName","#dBal","#dMin"].forEach(s=>$(s).value="");save();render()};
+
+$("#bud").oninput=e=>{S.budget=parseFloat(e.target.value)||0;save();renderPlan()};
+$("#strat").onchange=e=>{S.strategy=e.target.value;save();renderPlan()};
+$("#reset").onclick=()=>{if($("#reset").dataset.s){S={entries:[],debts:[],budget:0,strategy:"avalanche",seeded:1};save();$("#reset").dataset.s="";$("#reset").textContent="Cancella tutti i dati";$("#bud").value="";render()}else{$("#reset").dataset.s="1";$("#reset").textContent="Conferma: cancella tutto"}};
+
+function del(kind,id){S[kind]=S[kind].filter(x=>x.id!==id);save();render()}
+window.del=del;
+
+function renderMov(){
+ const m=$("#mon").value||today.slice(0,7);
+ const es=S.entries.filter(e=>e.date.slice(0,7)===m).sort((a,b)=>b.date.localeCompare(a.date));
+ const inn=es.filter(e=>e.type==="in").reduce((s,e)=>s+e.amount,0),out=es.filter(e=>e.type==="out").reduce((s,e)=>s+e.amount,0),bal=inn-out;
+ $("#sum").innerHTML=`<div><small>Entrate</small><b class="pos">${fmt(inn)}</b></div><div><small>Uscite</small><b class="neg">${fmt(out)}</b></div><div><small>Saldo</small><b class="${bal>=0?"pos":"neg"}">${fmt(bal)}</b></div>`;
+ const bycat={};es.filter(e=>e.type==="out").forEach(e=>bycat[e.cat]=(bycat[e.cat]||0)+e.amount);
+ const mx=Math.max(0,...Object.values(bycat));
+ $("#cats").innerHTML=mx?Object.entries(bycat).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`<div class="cat"><span>${esc(c)}</span><i style="width:${Math.max(2,v/mx*55)}%"></i><span>${fmt(v)}</span></div>`).join(""):`<p class="empty">Nessuna uscita registrata in questo mese.</p>`;
+ $("#list").innerHTML=es.length?es.map(e=>`<li class="it"><div class="t"><b>${esc(e.cat)}</b><span>${new Date(e.date+"T00:00").toLocaleDateString("it-IT",{day:"numeric",month:"short"})}${e.note?" – "+esc(e.note):""}</span></div><b class="${e.type==="in"?"pos":"neg"}">${e.type==="in"?"+":"−"}${fmt(e.amount)}</b><button class="x" aria-label="Modifica movimento" onclick="ed('${e.id}')">✎</button><button class="x" aria-label="Elimina movimento" onclick="del('entries','${e.id}')">×</button></li>`).join(""):`<p class="empty">Nessun movimento in questo mese. Aggiungi il primo qui sopra.</p>`;
+}
+function renderDebts(){
+ $("#dlist").innerHTML=S.debts.length?S.debts.map(d=>`<li class="it"><div class="t"><b>${esc(d.name)}</b><span>Tasso ${d.apr}% – rata minima ${fmt(d.min)}</span></div><b class="neg">${fmt(d.balance)}</b><button class="x" aria-label="Paga una rata" title="Paga una rata" onclick="payD('${d.id}')">€</button><button class="x" aria-label="Modifica debito" onclick="edD('${d.id}')">✎</button><button class="x" aria-label="Elimina debito" onclick="del('debts','${d.id}')">×</button></li>`).join(""):`<p class="empty">Nessun debito inserito. Aggiungi il primo qui sopra.</p>`;
+ const t=S.debts.reduce((s,d)=>s+d.balance,0),mn=S.debts.reduce((s,d)=>s+d.min,0);
+ $("#dtot").textContent=S.debts.length?`Totale da restituire: ${fmt(t)} – rate minime complessive: ${fmt(mn)} al mese`:"";
+}
+function sim(strategy,B=S.budget){
+ const d=S.debts.filter(x=>x.balance>0).map(x=>({...x,bal:x.balance,paidAt:null}));
+ let m=0,tot=0;const hist=[d.reduce((s,x)=>s+x.bal,0)];
+ while(d.some(x=>x.bal>0.005)&&m<600){
+  m++;
+  d.forEach(x=>{if(x.bal>0){const i=x.bal*x.apr/1200;x.bal+=i;tot+=i}});
+  let left=B;
+  d.forEach(x=>{if(x.bal>0){const p=Math.min(x.min,x.bal,left);x.bal-=p;left-=p}});
+  const ord=d.filter(x=>x.bal>0.005).sort(strategy==="avalanche"?(a,b)=>b.apr-a.apr||a.bal-b.bal:(a,b)=>a.bal-b.bal);
+  for(const x of ord){if(left<=0)break;const p=Math.min(left,x.bal);x.bal-=p;left-=p}
+  d.forEach(x=>{if(x.paidAt===null&&x.bal<=0.005)x.paidAt=m});hist.push(d.reduce((s,x)=>s+Math.max(0,x.bal),0));
+ }
+ return {m,tot,d,hist,ok:!d.some(x=>x.bal>0.005)};
+}
+function renderPlan(){
+ const mins=S.debts.reduce((s,d)=>s+d.min,0);
+ const months={};S.entries.forEach(e=>months[e.date.slice(0,7)]=(months[e.date.slice(0,7)]||0)+(e.type==="in"?e.amount:-e.amount));
+ const k=Object.keys(months),avg=k.length?k.reduce((s,x)=>s+months[x],0)/k.length:0;
+ $("#sugg").textContent=k.length?`Il tuo avanzo medio mensile dai movimenti registrati è ${fmt(avg)}. Le rate minime sono ${fmt(mins)}.`:`Le rate minime complessive sono ${fmt(mins)}. Registra qualche movimento per vedere il tuo avanzo medio.`;
+ const est=estimate();$("#sugg").innerHTML=est?`<b>Avanzo stimato: ${fmt(est.net)} al mese</b> (media degli ultimi ${est.mk.length} mesi: incassi ${fmt(est.inc)} − spese registrate ${fmt(est.out)} − tasse ${fmt(est.tax)} − spese fisse ${fmt(est.fix)}). Rate minime: ${fmt(mins)}. ${est.noOut?`<br>Attenzione: in ${est.noOut} di questi mesi non hai registrato uscite, quindi la stima potrebbe essere troppo alta. `:""}<button class="lnk" onclick="useEst()">Usa come budget</button>`:`Rate minime complessive: ${fmt(mins)}. Registra qualche mese di movimenti per ottenere una stima dell’avanzo.`;
+const o=$("#out");
+ if(!S.debts.length){o.innerHTML=`<div class="card"><p class="empty">Aggiungi almeno un debito nella scheda Debiti per ottenere il piano.</p></div>`;return}
+ if(!(S.budget>0)){o.innerHTML=`<div class="card"><p class="empty">Inserisci quanto puoi destinare ai debiti ogni mese per vedere il piano.</p></div>`;return}
+ let html="";
+ if(S.budget<mins)html+=`<div class="warn"><b>Il budget non copre le rate minime.</b> Servono almeno ${fmt(mins)} al mese: con meno di così i debiti continuano a crescere. Prova ad aumentare il budget o a rinegoziare le rate.</div>`;
+ const r=sim(S.strategy);
+ if(!r.ok){html+=`<div class="warn"><b>Con questo budget i debiti non si estinguono in 50 anni.</b> Gli interessi superano i pagamenti: aumenta la cifra mensile.</div>`;o.innerHTML=html;return}
+ const dt=new Date();dt.setMonth(dt.getMonth()+r.m);
+ const when=dt.toLocaleDateString("it-IT",{month:"long",year:"numeric"});
+ const y=Math.floor(r.m/12),mm=r.m%12;
+ const dur=[y?`${y} ${y===1?"anno":"anni"}`:"",mm?`${mm} ${mm===1?"mese":"mesi"}`:""].filter(Boolean).join(" e ");
+ html+=`<div class="hero"><small>Libero dai debiti entro</small><div class="big">${when}</div><small>Tra ${dur} – interessi totali stimati ${fmt(r.tot)}</small></div>`;
+ const xv=parseFloat($("#xtra").value)||0;
+ if(xv>0){const r2=sim(S.strategy,S.budget+xv);if(r2.ok)html+=`<p class="note"><b>Con ${fmt(xv)} in più al mese</b> finiresti ${r.m-r2.m} mesi prima e risparmieresti circa ${fmt(r.tot-r2.tot)} di interessi.</p>`}
+ const alt=sim(S.strategy==="avalanche"?"snowball":"avalanche");
+ if(alt.ok){const diff=alt.tot-r.tot;
+  html+=diff>1?`<p class="note">Rispetto all’altra strategia risparmi circa ${fmt(diff)} di interessi.</p>`:diff<-1?`<p class="note">L’altra strategia farebbe risparmiare circa ${fmt(-diff)} di interessi, ma questa ti dà risultati più rapidi sui debiti piccoli.</p>`:""}
+ html+=`<div class="card"><h2>Ordine di estinzione</h2>`+r.d.slice().sort((a,b)=>a.paidAt-b.paidAt).map(x=>{const dd=new Date();dd.setMonth(dd.getMonth()+x.paidAt);return`<div class="tl"><div class="n"><span>${esc(x.name)}</span><span>${dd.toLocaleDateString("it-IT",{month:"short",year:"numeric"})}</span></div><div class="track"><i style="width:${x.paidAt/r.m*100}%"></i></div></div>`}).join("")+`<p class="note">Quando un debito si chiude, la sua rata passa al successivo: il budget mensile resta invariato.</p></div>`+chartDebt(r);
+ o.innerHTML=html;
+}
+const MESI=["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+const f0=n=>Math.abs(n)>0.004?fmt(n):"–";
+const cl=n=>n>0.004?"pos":n<-0.004?"neg":"";
+const pct=(a,b)=>a>0?Math.round((a-b)/a*100)+"%":"–";
+const sumT=(es,t)=>es.filter(e=>e.type===t).reduce((s,e)=>s+e.amount,0);
+let editE=null,editD=null;
+function ed(id){const e=S.entries.find(x=>x.id===id);if(!e)return;editE=id;type=e.type;document.querySelectorAll(".seg button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.type===type));fillCats();$("#eCat").value=e.cat;$("#eAmt").value=e.amount;$("#eDate").value=e.date;$("#eNote").value=e.note||"";$("#addE").textContent="Salva modifica";$("#eAmt").scrollIntoView();$("#eAmt").focus()}
+function payD(id){const d=S.debts.find(x=>x.id===id);if(!d||d.balance<=0)return;const p=Math.min(d.min,d.balance);d.balance=Math.round((d.balance-p)*100)/100;S.entries.push({id:uid(),type:"out",amount:p,cat:"Rate e debiti",date:today,note:"Rata "+d.name});save();render()}
+function edD(id){const d=S.debts.find(x=>x.id===id);if(!d)return;editD=id;$("#dName").value=d.name;$("#dBal").value=d.balance;$("#dApr").value=d.apr;$("#dMin").value=d.min;$("#addD").textContent="Salva modifica";$("#dName").focus()}
+function estimate(){const cm=today.slice(0,7),mk=[...new Set(S.entries.map(e=>e.date.slice(0,7)))].filter(m=>m<cm).sort().slice(-3);if(!mk.length)return null;const es=S.entries.filter(e=>mk.includes(e.date.slice(0,7))),inc=sumT(es,"in")/mk.length,out=es.filter(e=>e.type==="out"&&e.cat!=="Rate e debiti").reduce((s,e)=>s+e.amount,0)/mk.length,noOut=mk.filter(m=>!es.some(e=>e.type==="out"&&e.date.slice(0,7)===m)).length,tax=inc*(S.tax||0)/100,fix=S.fixed||0;return{mk,inc,out,tax,fix,noOut,net:inc-out-tax-fix}}
+function useEst(){const e=estimate();if(!e)return;S.budget=Math.max(0,Math.round(e.net));$("#bud").value=S.budget||"";save();renderPlan()}
+function chartDebt(r){const h=r.hist,st=Math.max(1,Math.ceil(h.length/36)),pts=h.filter((_,i)=>i%st===0||i===h.length-1),mx=h[0]||1;return`<div class="card"><h2>Come scende il debito</h2><div class="bars" role="img" aria-label="Andamento del debito residuo">${pts.map(v=>`<i style="height:${Math.max(2,v/mx*100)}%"></i>`).join("")}</div><p class="note">Da ${fmt(mx)} a zero in ${r.m} mesi.</p></div>`}
+window.ed=ed;window.payD=payD;window.edD=edD;window.useEst=useEst;
+$("#qAdd").onclick=()=>{const a=parseFloat($("#qAmt").value);if(!(a>0)){$("#qAmt").focus();return}S.entries.push({id:uid(),type:"in",amount:a,cat:"Lavoro autonomo",date:today,note:"Incasso giornaliero"});$("#qAmt").value="";$("#mon").value=today.slice(0,7);save();render()};
+$("#tax").oninput=e=>{S.tax=parseFloat(e.target.value)||0;save();renderPlan()};
+$("#fix").oninput=e=>{S.fixed=parseFloat(e.target.value)||0;save();renderPlan()};
+$("#xtra").oninput=renderPlan;
+$("#bkGen").onclick=()=>{$("#bk").value=JSON.stringify(S);$("#bk").select();$("#bkMsg").textContent="Backup generato: copia tutto il testo."};
+$("#bkRes").onclick=()=>{try{const d=JSON.parse($("#bk").value);if(!Array.isArray(d.entries)||!Array.isArray(d.debts))throw 0;S=Object.assign({entries:[],debts:[],budget:0,strategy:"avalanche"},d,{seeded:1});save();$("#bud").value=S.budget||"";$("#strat").value=S.strategy;$("#tax").value=S.tax||"";$("#fix").value=S.fixed||"";render();$("#bkMsg").textContent="Dati ripristinati."}catch(e){$("#bkMsg").textContent="Backup non valido."}};
+function addM(ym,n){const[y,m]=ym.split("-").map(Number),t=y*12+m-1+n;return Math.floor(t/12)+"-"+String(t%12+1).padStart(2,"0")}
+const lm=ym=>new Date(+ym.slice(0,4),+ym.slice(5)-1,1).toLocaleDateString("it-IT",{month:"short",year:"numeric"});
+function genRec(){
+ S.rec=S.rec||[];S.recDone=S.recDone||{};let ch=0;const cm=today.slice(0,7);
+ S.rec.forEach(r=>{const last=r.months?addM(r.start,r.months-1):"9999-12";
+  for(let ym=r.start;ym<=cm&&ym<=last;ym=addM(ym,1)){
+   const k=r.id+"|"+ym;if(S.recDone[k])continue;
+   const nd=new Date(+ym.slice(0,4),+ym.slice(5),0).getDate(),dd=ym+"-"+String(Math.min(r.day,nd)).padStart(2,"0");
+   if(dd>today)continue;
+   S.entries.push({id:"rec-"+r.id+"-"+ym,type:"out",amount:r.amount,cat:r.cat,date:dd,note:r.name+" (ricorrente)"});S.recDone[k]=1;ch=1}});
+ if(ch)save(1);
+}
+function renderRecs(){
+ $("#recList").innerHTML=(S.rec||[]).length?S.rec.map(r=>{
+  const done=Object.keys(S.recDone||{}).filter(k=>k.startsWith(r.id+"|")).length,left=r.months?Math.max(0,r.months-done):0;
+  const info=r.months?(left?`restano ${left} pagamenti (${fmt(left*r.amount)}), fino a ${lm(addM(r.start,r.months-1))}`:"concluso"):"senza scadenza";
+  return`<li class="it"><div class="t"><b>${esc(r.name)}</b><span>${fmt(r.amount)} il ${r.day} di ogni mese – ${info}</span></div><button class="x" aria-label="Elimina spesa ricorrente" onclick="delRec('${r.id}')">×</button></li>`}).join(""):`<p class="empty">Nessuna spesa ricorrente. Aggiungi la prima qui sopra.</p>`;
+}
+function delRec(id){S.rec=(S.rec||[]).filter(r=>r.id!==id);save();render()}
+window.delRec=delRec;
+$("#rcCat").innerHTML=CATS.out.map(c=>`<option>${c}</option>`).join("");$("#rcStart").value=today.slice(0,7);
+$("#recAdd").onclick=()=>{
+ const n=$("#rcName").value.trim(),a=parseFloat($("#rcAmt").value),d=parseInt($("#rcDay").value),s=$("#rcStart").value,mo=(parseInt($("#rcDur").value)||0)*parseInt($("#rcUnit").value);
+ if(!n){$("#rcName").focus();return}if(!(a>0)){$("#rcAmt").focus();return}if(!(d>=1&&d<=31)){$("#rcDay").focus();return}if(!s){$("#rcStart").focus();return}
+ S.rec=S.rec||[];S.rec.push({id:uid(),name:n,amount:a,day:d,cat:$("#rcCat").value,start:s,months:mo});
+ ["#rcName","#rcAmt","#rcDay","#rcDur"].forEach(x=>$(x).value="");save();render()};
+function chartSVG(L,I,O,line,lbl){
+ const W=640,H=230,pl=40,pr=6,pt=10,pb=24,iw=W-pl-pr,ih=H-pt-pb,n=L.length;
+ const mx=Math.max(1,...I,...O,...line),mn=Math.min(0,...line),y=v=>pt+ih*(1-(v-mn)/(mx-mn)),bw=iw/n,g=bw*.4;
+ const k=v=>Math.abs(v)>=1000?(v/1000).toFixed(1).replace(".0","")+"k":Math.round(v);
+ let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Grafico di entrate, uscite e ${lbl.toLowerCase()}">`;
+ [0,.5,1].forEach(t=>{const v=mn+(mx-mn)*t;s+=`<line class="ax" x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}"/><text x="${pl-4}" y="${y(v)+3}" text-anchor="end">${k(v)}</text>`});
+ if(mn<0)s+=`<line class="ax" style="stroke:var(--mute)" x1="${pl}" x2="${W-pr}" y1="${y(0)}" y2="${y(0)}"/>`;
+ const st=Math.ceil(n/12);
+ L.forEach((l,i)=>{const x=pl+i*bw+bw*.1;
+  s+=`<rect class="gi" x="${x}" y="${y(I[i])}" width="${g}" height="${Math.max(0,y(0)-y(I[i]))}"/><rect class="go" x="${x+g}" y="${y(O[i])}" width="${g}" height="${Math.max(0,y(0)-y(O[i]))}"/>`;
+  if(i%st===0)s+=`<text x="${pl+i*bw+bw/2}" y="${H-8}" text-anchor="middle">${l}</text>`});
+ s+=`<polyline class="gl" points="${line.map((v,i)=>(pl+i*bw+bw/2).toFixed(1)+","+y(v).toFixed(1)).join(" ")}"/></svg>`;
+ return s+`<div class="leg"><span><i style="background:var(--in)"></i>Entrate</span><span><i style="background:var(--out)"></i>Uscite</span><span><i style="background:var(--acc)"></i>${lbl}</span></div>`;
+}
+const sumLine=(I,O)=>{const a=I.reduce((s,x)=>s+x,0),b=O.reduce((s,x)=>s+x,0);return`<p class="note">Totale: entrate ${fmt(a)}, uscite ${fmt(b)}, saldo ${fmt(a-b)}.</p>`};
+function renderAnd(){
+ const E=S.entries,tot=(p,t)=>sumT(E.filter(e=>e.date.startsWith(p)),t);
+ const ys=[...new Set(E.map(e=>e.date.slice(0,4)).concat(today.slice(0,4)))].sort();
+ const sy=$("#aYear"),cy=sy.value||today.slice(0,4);
+ sy.innerHTML=ys.map(y=>`<option${y===cy?" selected":""}>${y}</option>`).join("");
+ const m=$("#aMon").value||today.slice(0,7),nd=new Date(+m.slice(0,4),+m.slice(5),0).getDate();
+ let dl=[],di=[],dO=[],dc=[],c=0;
+ for(let d=1;d<=nd;d++){const p=m+"-"+String(d).padStart(2,"0"),a=tot(p,"in"),b=tot(p,"out");c+=a-b;dl.push(d);di.push(a);dO.push(b);dc.push(c)}
+ $("#cDay").innerHTML=chartSVG(dl,di,dO,dc,"Saldo cumulato")+sumLine(di,dO);
+ const y=sy.value;let mi=[],mo=[],mu=[];
+ MESI.forEach((_,i)=>{const p=y+"-"+String(i+1).padStart(2,"0"),a=tot(p,"in"),b=tot(p,"out");mi.push(a);mo.push(b);mu.push(a-b)});
+ $("#cMon").innerHTML=chartSVG(MESI.map(x=>x.slice(0,3)),mi,mo,mu,"Utile del mese")+sumLine(mi,mo);
+ let yi=[],yo=[],yu=[];
+ ys.forEach(a=>{const i=tot(a,"in"),o=tot(a,"out");yi.push(i);yo.push(o);yu.push(i-o)});
+ $("#cYear").innerHTML=chartSVG(ys,yi,yo,yu,"Utile dell’anno")+sumLine(yi,yo);
+}
+$("#aMon").value=today.slice(0,7);$("#aMon").onchange=renderAnd;$("#aYear").onchange=renderAnd;
+function genSnap(){const t=Math.round(S.debts.reduce((s,d)=>s+d.balance,0)*100)/100,cm=today.slice(0,7);S.dHist=S.dHist||{};if(S.debts.length&&S.dHist[cm]!==t){S.dHist[cm]=t;save(1)}}
+const dim=ym=>new Date(+ym.slice(0,4),+ym.slice(5),0).getDate();
+const totM=(p,t)=>sumT(S.entries.filter(e=>e.date.startsWith(p)),t);
+function monthCosts(cm){
+ const reg=sumT(S.entries.filter(e=>e.date.startsWith(cm)&&!e.id.startsWith("rec-")&&e.cat!=="Rate e debiti"),"out");
+ const rec=(S.rec||[]).filter(r=>r.start<=cm&&(!r.months||cm<=addM(r.start,r.months-1))).reduce((s,r)=>s+r.amount,0);
+ const mins=S.debts.filter(d=>d.balance>0.005).reduce((s,d)=>s+d.min,0),fix=S.fixed||0;
+ return{reg,rec,fix,mins,tot:reg+rec+fix+mins};
+}
+function renderHome(){
+ const cm=today.slice(0,7),nd=dim(cm),inc=totM(cm,"in"),out=totM(cm,"out"),debt=S.debts.reduce((s,d)=>s+d.balance,0);
+ let dtxt="Nessun debito inserito.";
+ if(debt>0){dtxt=`Debito residuo: ${fmt(debt)}.`;if(S.budget>0){const r=sim(S.strategy);if(r.ok){const dt=new Date();dt.setMonth(dt.getMonth()+r.m);dtxt+=` Libero entro ${dt.toLocaleDateString("it-IT",{month:"long",year:"numeric"})}.`}}else dtxt+=" Imposta il budget nel Piano per vedere la data di fine."}
+ $("#hMain").innerHTML=`<small>Saldo di ${lm(cm)}</small><div class="big">${fmt(inc-out)}</div><small>Entrate ${fmt(inc)} · Uscite ${fmt(out)}</small><br><small>${dtxt}</small>`;
+ const miss=[...new Set(S.entries.map(e=>e.date.slice(0,7)))].filter(m=>m<cm&&!S.entries.some(e=>e.type==="out"&&e.date.startsWith(m))).sort();
+ $("#hWarn").innerHTML=miss.length?`<div class="warn"><b>Mancano le uscite di ${miss.length} ${miss.length===1?"mese":"mesi"}:</b> ${miss.map(lm).join(", ")}. Finché non le inserisci, utile, margine e previsioni sono ottimistici.</div>`:"";
+ const c=monthCosts(cm),tx=Math.min(95,S.tax||0)/100,be=c.tot/(1-tx);
+ $("#hBE").innerHTML=c.tot>0?`<div class="tl"><div class="n"><span>Incassato ${fmt(inc)}</span><span>Obiettivo ${fmt(be)}</span></div><div class="track"><i style="width:${Math.min(100,inc/be*100)}%"></i></div></div><p style="margin:0">${inc>=be?`<b class="pos">Hai già coperto i costi del mese:</b> da qui in poi è utile.`:`<b>Ti mancano ${fmt(be-inc)}</b> per coprire i costi del mese.`}</p><p class="note">Costi attesi ${fmt(c.tot)}: altre spese ${fmt(c.reg)}, ricorrenti ${fmt(c.rec)}, spese fisse non registrate ${fmt(c.fix)}, rate minime dei debiti ${fmt(c.mins)}${tx?`, più tasse al ${Math.round(tx*100)}% sugli incassi`:""}.</p>`:`<p class="empty">Aggiungi spese ricorrenti, spese fisse o debiti per calcolare il punto di pareggio.</p>`;
+ const ins=S.entries.filter(e=>e.type==="in"&&e.date.startsWith(cm)),last=Math.max(0,...ins.map(e=>+e.date.slice(8)));
+ let fc=null,basis="";
+ if(last>0){fc=inc/last*nd;basis=`In base al ritmo di ${fmt(inc)} in ${last} giorni.`;if(+today.slice(8)-last>3)basis+=` Ultimo incasso registrato: giorno ${last}. Se non registri gli incassi ogni giorno, la previsione è troppo bassa.`}
+ else{const e=estimate();if(e){fc=e.inc;basis="Nessun incasso registrato questo mese: uso la media degli ultimi mesi."}}
+ const u=fc===null?0:fc*(1-tx)-c.tot;
+ $("#hFc").innerHTML=fc!==null?`<p style="margin:0">Incassi a fine mese: circa <b>${fmt(fc)}</b>. Utile stimato dopo costi e tasse: <b class="${cl(u)}">${fmt(u)}</b>.</p><p class="note">${basis}</p>`:`<p class="empty">Registra qualche incasso per ottenere la previsione.</p>`;
+ const pm=addM(cm,-1),mv=m=>{const es=S.entries.filter(e=>e.date.startsWith(m));return[sumT(es,"in"),sumT(es,"out")]};
+ const[a,b]=mv(pm),[pa,pb]=mv(addM(pm,-1)),[la,lb]=mv(addM(pm,-12)),ms=[1,2,3].map(i=>mv(addM(pm,-i))).filter(x=>x[0]||x[1]),n=ms.length||1,av=[ms.reduce((s,x)=>s+x[0],0)/n,ms.reduce((s,x)=>s+x[1],0)/n];
+ const dl=(x,y)=>y?(x>=y?"+":"−")+Math.abs(Math.round((x-y)/Math.abs(y)*100))+"%":"–";
+ const rows=[["Incassi",a,pa,av[0],la],["Uscite",b,pb,av[1],lb],["Utile",a-b,pa-pb,av[0]-av[1],la-lb]];
+ $("#hCmp").innerHTML=`<thead><tr><th>${lm(pm)}</th><th>Valore</th><th>vs mese prima</th><th>vs media 3 mesi</th><th>vs anno prima</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${f0(r[1])}</td><td>${dl(r[1],r[2])}</td><td>${dl(r[1],r[3])}</td><td>${dl(r[1],r[4])}</td></tr>`).join("")}</tbody>`;
+ const du=[];(S.rec||[]).forEach(r=>{for(const ym of[cm,addM(cm,1)]){if(ym<r.start||(r.months&&ym>addM(r.start,r.months-1)))continue;const dd=ym+"-"+String(Math.min(r.day,dim(ym))).padStart(2,"0");if(dd>today){du.push([dd,r.name,r.amount]);break}}});
+ du.sort();
+ $("#hDue").innerHTML=du.length?du.slice(0,5).map(x=>`<li class="it"><div class="t"><b>${esc(x[1])}</b><span>${new Date(x[0]+"T00:00").toLocaleDateString("it-IT",{day:"numeric",month:"long"})}</span></div><b class="neg">${fmt(x[2])}</b></li>`).join(""):`<p class="empty">Nessuna scadenza in arrivo. Aggiungi le spese ricorrenti nella scheda Movimenti.</p>`;
+}
+function renderMore(){
+ const by={};S.entries.filter(e=>e.type==="in").forEach(e=>by[e.date]=(by[e.date]||0)+e.amount);
+ const g=[[],[],[],[],[],[],[]];Object.entries(by).forEach(([d,v])=>g[(new Date(d+"T00:00").getDay()+6)%7].push(v));
+ const nm=["Lun","Mar","Mer","Gio","Ven","Sab","Dom"],av=g.map(a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0),mx=Math.max(...av);
+ $("#cWd").innerHTML=mx?av.map((v,i)=>`<div class="cat"><span>${nm[i]}</span><i style="width:${Math.max(2,v/mx*55)}%;background:var(--in)"></i><span>${f0(v)}${g[i].length?` (${g[i].length} gg)`:""}</span></div>`).join("")+`<p class="note">Media degli incassi dei giorni registrati, esclusi i totali mensili importati. Più giorni registri, più il dato è affidabile.</p>`:`<p class="empty">Registra gli incassi giorno per giorno per vedere quali giorni rendono di più.</p>`;
+ const k=Object.keys(S.dHist||{}).sort(),H=S.dHist||{},hm=Math.max(1,...k.map(x=>H[x]));
+ $("#cDebt").innerHTML=k.length?`<div class="bars" role="img" aria-label="Debito residuo registrato mese per mese">${k.map(m=>`<i style="height:${Math.max(2,H[m]/hm*100)}%" title="${lm(m)}"></i>`).join("")}</div><div class="blab">${k.map(m=>`<span>${lm(m).slice(0,3)}</span>`).join("")}</div><p class="note">${k.length>1?`Da ${lm(k[0])} a ${lm(k[k.length-1])}: ${fmt(H[k[0]]-H[k[k.length-1]])} di debito in meno (da ${fmt(H[k[0]])} a ${fmt(H[k[k.length-1]])}).`:`Residuo registrato a ${lm(k[0])}: ${fmt(H[k[0]])}. Ogni mese l’app aggiunge un punto, così vedrai come scende davvero il debito.`}</p>`:`<p class="empty">Aggiungi i tuoi debiti: da quel momento l’app registra ogni mese il residuo reale.</p>`;
+}
+function pickM(m){$("#rMon").value=m;renderRend();$("#rDay").scrollIntoView()}
+window.pickM=pickM;
+$("#rMon").value=today.slice(0,7);
+function renderRend(){
+ const ys=new Set(S.entries.map(e=>e.date.slice(0,4)));ys.add(today.slice(0,4));
+ const sel=$("#rYear"),cur=sel.value||today.slice(0,4);
+ sel.innerHTML=[...ys].sort().map(y=>`<option${y===cur?" selected":""}>${y}</option>`).join("");
+ const y=sel.value;let TI=0,TO=0;
+ const rows=MESI.map((n,i)=>{const k=y+"-"+String(i+1).padStart(2,"0");const es=S.entries.filter(e=>e.date.slice(0,7)===k);const a=sumT(es,"in"),b=sumT(es,"out");TI+=a;TO+=b;return`<tr><td><button class="lnk" onclick="pickM('${k}')">${n}</button></td><td>${f0(a)}</td><td>${f0(b)}</td><td class="${cl(a-b)}">${f0(a-b)}</td><td>${pct(a,b)}</td></tr>`}).join("");
+ $("#rAnn").innerHTML=`<thead><tr><th>Mese</th><th>Entrate</th><th>Uscite</th><th>Utile</th><th>Margine</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td>Totale ${y}</td><td>${fmt(TI)}</td><td>${fmt(TO)}</td><td class="${cl(TI-TO)}">${fmt(TI-TO)}</td><td>${pct(TI,TO)}</td></tr></tfoot>`;
+ const dat=MESI.map((_,i)=>{const es=S.entries.filter(e=>e.date.slice(0,7)===y+"-"+String(i+1).padStart(2,"0"));return[sumT(es,"in"),sumT(es,"out")]}),mxv=Math.max(1,...dat.flat());
+ $("#rChart").innerHTML=dat.map((p,i)=>`<div title="${MESI[i]}"><i style="height:${p[0]/mxv*100}%;background:var(--in)"></i><i style="height:${p[1]/mxv*100}%;background:var(--out)"></i></div>`).join("");
+ const m=$("#rMon").value||today.slice(0,7),[yy,mm]=m.split("-").map(Number),nd=new Date(yy,mm,0).getDate();
+ let ci=0,co=0,dr="";
+ for(let d=1;d<=nd;d++){const ds=m+"-"+String(d).padStart(2,"0");const es=S.entries.filter(e=>e.date===ds);const a=sumT(es,"in"),b=sumT(es,"out");ci+=a;co+=b;
+  dr+=`<tr${a||b?"":' class="z"'}><td>${new Date(yy,mm-1,d).toLocaleDateString("it-IT",{weekday:"short",day:"numeric"})}</td><td>${f0(a)}</td><td>${f0(b)}</td><td class="${cl(a-b)}">${f0(a-b)}</td><td class="${cl(ci-co)}">${f0(ci-co)}</td></tr>`}
+ $("#rDays").innerHTML=`<thead><tr><th>Giorno</th><th>Entrate</th><th>Uscite</th><th>Saldo</th><th>Cumulato</th></tr></thead><tbody>${dr}</tbody><tfoot><tr><td>Totale ${MESI[mm-1].toLowerCase()}</td><td>${fmt(ci)}</td><td>${fmt(co)}</td><td class="${cl(ci-co)}">${fmt(ci-co)}</td><td>${pct(ci,co)}</td></tr></tfoot>`;
+}
+$("#rYear").onchange=renderRend;$("#rMon").onchange=renderRend;
+function render(){genRec();genSnap();renderHome();renderMov();renderRecs();renderRend();renderAnd();renderMore();renderDebts();renderPlan()}
+$("#bud").value=S.budget||"";$("#strat").value=S.strategy;$("#tax").value=S.tax||"";$("#fix").value=S.fixed||"";
+fillCats();render();
+if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
